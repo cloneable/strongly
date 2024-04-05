@@ -12,3 +12,6 @@ default = ["std"]
 std = []
 
 [dependencies]
+proc-macro2 = { version = "1", default-features = false, features = ["proc-macro"] }
+quote = { version = "1", default-features = false, features = ["proc-macro"] }
+syn = { version = "2", default-features = false, features = ["full", "proc-macro", "parsing"] }
