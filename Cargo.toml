@@ -1,0 +1,14 @@
+[package]
+name = "strongly"
+version = "0.0.0"
+edition = "2021"
+repository = "https://github.com/cloneable/strongly"
+
+[lib]
+proc-macro = true
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
