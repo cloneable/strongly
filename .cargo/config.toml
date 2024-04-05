@@ -1,0 +1,2 @@
+[alias]
+fmt-unstable = "fmt -- --unstable-features --error-on-unformatted --config=imports_granularity=Crate,group_imports=One,wrap_comments=true,comment_width=80"
