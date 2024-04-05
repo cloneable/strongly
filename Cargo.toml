@@ -3,6 +3,7 @@ name = "strongly"
 version = "0.0.0"
 edition = "2021"
 repository = "https://github.com/cloneable/strongly"
+exclude = [".cargo/", ".github/", ".gitignore", "rustfmt.toml"]
 
 [lib]
 proc-macro = true
