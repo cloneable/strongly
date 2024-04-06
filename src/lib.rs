@@ -1,6 +1,8 @@
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::{Error, ItemStruct, Result};
+use syn::{
+  spanned::Spanned, Error, Fields, ItemStruct, Result, Type, Visibility,
+};
 
 #[proc_macro_attribute]
 pub fn typed(
@@ -21,7 +23,8 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
     ));
   }
 
-  let _item = syn::parse2::<ItemStruct>(input.clone())?;
+  let item = syn::parse2::<ItemStruct>(input.clone())?;
+  let StrongType { outer, outer_vis, inner, .. } = (&item).try_into()?;
 
   let mut output = TokenStream::new();
 
@@ -33,5 +36,78 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
   });
   output.extend(input);
 
+  output.extend(quote! {
+    impl #outer {
+      #[must_use]
+      #[inline(always)]
+      #outer_vis const fn new(inner: #inner) -> Self { Self(inner) }
+
+      #[must_use]
+      #[inline(always)]
+      #outer_vis const fn into_inner(self) -> #inner { self.0 }
+    }
+
+    impl ::core::fmt::Display for #outer {
+      #[inline(always)]
+      fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        ::core::fmt::Display::fmt(&self.0, f)
+      }
+    }
+
+    // TODO: FromStr
+
+    // TODO: macro flag param
+    impl ::core::convert::From<#inner> for #outer {
+      #[must_use]
+      #[inline(always)]
+      fn from(inner: #inner) -> Self { Self(inner) }
+    }
+
+    // TODO: macro flag param
+    impl ::core::convert::From<#outer> for #inner {
+      #[must_use]
+      #[inline(always)]
+      fn from(outer: #outer) -> Self { outer.0 }
+    }
+
+    // TODO: macro flag param
+    impl ::core::borrow::Borrow<#inner> for #outer {
+      #[must_use]
+      #[inline(always)]
+      fn borrow(&self) -> &#inner { &self.0 }
+    }
+  });
+
   Ok(output)
+}
+
+struct StrongType<'a> {
+  outer: &'a Ident,
+  outer_vis: &'a Visibility,
+  inner: &'a Ident,
+  inner_vis: &'a Visibility,
+}
+
+impl<'a> TryFrom<&'a ItemStruct> for StrongType<'a> {
+  type Error = Error;
+
+  fn try_from(item: &'a ItemStruct) -> Result<Self> {
+    let outer = &item.ident;
+    let outer_vis = &item.vis;
+
+    let Fields::Unnamed(fields) = &item.fields else {
+      return Err(Error::new(item.span(), "not tuple struct"));
+    };
+    if fields.unnamed.len() != 1 {
+      return Err(Error::new(item.span(), "not newtype struct"));
+    }
+    let field = fields.unnamed.first().expect("first element");
+    let inner = match &field.ty {
+      Type::Path(path) => path.path.require_ident()?,
+      _ => return Err(Error::new(field.ty.span(), "unexpected type")),
+    };
+    let inner_vis = &field.vis;
+
+    Ok(StrongType { outer, outer_vis, inner, inner_vis })
+  }
 }
