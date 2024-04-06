@@ -72,7 +72,13 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
       }
     }
 
-    // TODO: FromStr
+    impl ::core::str::FromStr for #outer {
+      type Err = ::core::num::ParseIntError; // TODO: derive from #inner
+      #[inline(always)]
+      fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
+        #inner::from_str(s).map(Self)
+      }
+    }
 
     // TODO: macro flag param
     impl ::core::convert::From<#inner> for #outer {
