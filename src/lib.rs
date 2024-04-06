@@ -36,6 +36,24 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
   });
   output.extend(input);
 
+  // TODO: serde macro param
+  if cfg!(feature = "serde") {
+    output.extend(quote! {
+      impl ::serde::Serialize for #outer {
+        #[inline(always)]
+        fn serialize<S: ::serde::Serializer>(&self, s: S)
+          -> ::core::result::Result<S::Ok, S::Error>
+        { ::serde::Serialize::serialize(&self.0, s) }
+      }
+      impl<'de> ::serde::Deserialize<'de> for #outer {
+        #[inline(always)]
+        fn deserialize<D: ::serde::Deserializer<'de>>(d: D)
+          -> ::core::result::Result<Self, D::Error>
+        { ::serde::Deserialize::deserialize(d).map(Self) }
+      }
+    });
+  }
+
   output.extend(quote! {
     impl #outer {
       #[must_use]
