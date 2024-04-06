@@ -24,7 +24,8 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
   }
 
   let item = syn::parse2::<ItemStruct>(input.clone())?;
-  let StrongType { outer, outer_vis, inner, .. } = (&item).try_into()?;
+  let StrongType { outer, outer_vis, inner, inner_vis: _inner_vis } =
+    (&item).try_into()?;
 
   let mut output = TokenStream::new();
 
