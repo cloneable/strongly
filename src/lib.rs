@@ -1,4 +1,5 @@
 use proc_macro2::{Span, TokenStream};
+use quote::quote;
 use syn::{Error, ItemStruct, Result};
 
 #[proc_macro_attribute]
@@ -22,5 +23,15 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
   let _item = syn::parse2::<ItemStruct>(input.clone())?;
 
-  Ok(input)
+  let mut output = TokenStream::new();
+
+  // Emit unchanged struct with the nine default derives.
+  // Deriving PartialEq,Eq also gives us StructuralPartialEq.
+  output.extend(quote! {
+    #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    #[repr(transparent)]
+  });
+  output.extend(input);
+
+  Ok(output)
 }
