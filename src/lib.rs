@@ -46,6 +46,9 @@ struct StrongType {
   outer: Ident,
   outer_vis: Visibility,
   inner: Ident,
+  inner_base: String,
+  inner_signed: bool,
+  inner_parse_err: TokenStream,
   inner_vis: Visibility,
 }
 
@@ -68,9 +71,31 @@ impl StrongType {
       Type::Path(path) => path.path.require_ident()?.clone(),
       _ => return Err(Error::new(field.ty.span(), "unexpected type")),
     };
+    let (inner_base, inner_signed, inner_parse_err) =
+      match inner.to_string().as_str() {
+        "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
+          ("int", false, quote!(::core::num::ParseIntError))
+        }
+        "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {
+          ("int", true, quote!(::core::num::ParseIntError))
+        }
+        "f32" | "f64" => ("float", true, quote!(::core::num::ParseFloatError)),
+        "char" => ("char", false, quote!(::core::char::ParseCharError)),
+        "bool" => ("bool", false, quote!(::core::str::ParseBoolError)),
+        _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
+      };
     let inner_vis = syn::parse2(field.vis.to_token_stream())?;
 
-    Ok(StrongType { input, outer, outer_vis, inner, inner_vis })
+    Ok(StrongType {
+      input,
+      outer,
+      outer_vis,
+      inner,
+      inner_base: inner_base.into(),
+      inner_signed,
+      inner_parse_err,
+      inner_vis,
+    })
   }
 }
 
@@ -87,9 +112,11 @@ impl StrongType {
   }
 
   fn emit_impl(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, outer_vis, inner, .. } = self;
+    let Self { outer, outer_vis, inner, inner_parse_err, .. } = self;
     output.extend(quote! {
       impl #outer {
+        // TODO: TRUE, FALSE for bool
+        // TODO: ONE, ZERO for numbers
         #outer_vis const MIN: Self = Self(#inner::MIN);
         #outer_vis const MAX: Self = Self(#inner::MAX);
         #outer_vis const BITS: u32 = #inner::BITS;
@@ -110,7 +137,7 @@ impl StrongType {
       }
 
       impl ::core::str::FromStr for #outer {
-        type Err = ::core::num::ParseIntError; // TODO: derive from #inner
+        type Err = #inner_parse_err;
         #[inline(always)]
         fn from_str(s: &str) -> ::core::result::Result<Self, Self::Err> {
           #inner::from_str(s).map(Self)
