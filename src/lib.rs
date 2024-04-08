@@ -29,10 +29,13 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
   st.emit_input(&mut output)?;
   st.emit_impl(&mut output)?;
+  st.emit_impl_ops_alg(&mut output)?;
+  st.emit_impl_ops_bit(&mut output)?;
+  st.emit_impl_int_display(&mut output)?;
 
   // TODO: serde macro param
   if cfg!(feature = "serde") {
-    st.emit_serde(&mut output)?;
+    st.emit_impl_serde(&mut output)?;
   }
 
   Ok(output)
@@ -87,6 +90,10 @@ impl StrongType {
     let Self { outer, outer_vis, inner, .. } = self;
     output.extend(quote! {
       impl #outer {
+        #outer_vis const MIN: Self = Self(#inner::MIN);
+        #outer_vis const MAX: Self = Self(#inner::MAX);
+        #outer_vis const BITS: u32 = #inner::BITS;
+
         #[must_use]
         #[inline(always)]
         #outer_vis const fn new(inner: #inner) -> Self { Self(inner) }
@@ -134,7 +141,175 @@ impl StrongType {
     Ok(())
   }
 
-  fn emit_serde(&self, output: &mut TokenStream) -> Result<()> {
+  fn emit_impl_ops_alg(&self, output: &mut TokenStream) -> Result<()> {
+    let Self { outer, .. } = self;
+    output.extend(quote! {
+      impl ::core::ops::Add for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn add(self, other: Self) -> Self::Output { Self(self.0.add(other.0)) }
+      }
+
+      impl ::core::ops::AddAssign for #outer {
+        #[inline(always)]
+        fn add_assign(&mut self, other: Self) { self.0.add_assign(other.0); }
+      }
+
+      impl ::core::ops::Sub for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn sub(self, other: Self) -> Self::Output { Self(self.0.sub(other.0)) }
+      }
+
+      impl ::core::ops::SubAssign for #outer {
+        #[inline(always)]
+        fn sub_assign(&mut self, other: Self) { self.0.sub_assign(other.0); }
+      }
+
+      impl ::core::ops::Mul for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn mul(self, other: Self) -> Self::Output { Self(self.0.mul(other.0)) }
+      }
+
+      impl ::core::ops::MulAssign for #outer {
+        #[inline(always)]
+        fn mul_assign(&mut self, other: Self) { self.0.mul_assign(other.0); }
+      }
+
+      impl ::core::ops::Div for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn div(self, other: Self) -> Self::Output { Self(self.0.div(other.0)) }
+      }
+
+      impl ::core::ops::DivAssign for #outer {
+        #[inline(always)]
+        fn div_assign(&mut self, other: Self) { self.0.div_assign(other.0); }
+      }
+
+      impl ::core::ops::Rem for #outer {
+        type Output = Self;
+        #[inline(always)]
+        fn rem(self, other: Self) -> Self::Output { Self(self.0.rem(other.0)) }
+      }
+
+      impl ::core::ops::RemAssign for #outer {
+        #[inline(always)]
+        fn rem_assign(&mut self, other: Self) { self.0.rem_assign(other.0); }
+      }
+    });
+    Ok(())
+  }
+
+  fn emit_impl_ops_bit(&self, output: &mut TokenStream) -> Result<()> {
+    let Self { outer, .. } = self;
+    output.extend(quote! {
+      impl ::core::ops::BitAnd for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn bitand(self, other: Self) -> Self::Output {
+          Self(self.0.bitand(other.0))
+        }
+      }
+
+      impl ::core::ops::BitAndAssign for #outer {
+        #[inline(always)]
+        fn bitand_assign(&mut self, other: Self) {
+          self.0.bitand_assign(other.0);
+        }
+      }
+
+      impl ::core::ops::BitOr for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn bitor(self, other: Self) -> Self::Output {
+          Self(self.0.bitor(other.0))
+        }
+      }
+
+      impl ::core::ops::BitOrAssign for #outer {
+        #[inline(always)]
+        fn bitor_assign(&mut self, other: Self) {
+          self.0.bitor_assign(other.0);
+        }
+      }
+
+      impl ::core::ops::BitXor for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn bitxor(self, other: Self) -> Self::Output {
+          Self(self.0.bitxor(other.0))
+        }
+      }
+
+      impl ::core::ops::BitXorAssign for #outer {
+        #[inline(always)]
+        fn bitxor_assign(&mut self, other: Self) {
+          self.0.bitxor_assign(other.0);
+        }
+      }
+
+      impl ::core::ops::Not for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn not(self) -> Self::Output { Self(self.0.not()) }
+      }
+    });
+    Ok(())
+  }
+
+  fn emit_impl_int_display(&self, output: &mut TokenStream) -> Result<()> {
+    let Self { outer, .. } = self;
+    output.extend(quote! {
+      impl ::core::fmt::Binary for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::Binary::fmt(&self.0, f)
+        }
+      }
+
+      impl ::core::fmt::Octal for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::Octal::fmt(&self.0, f)
+        }
+      }
+
+      impl ::core::fmt::LowerHex for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::LowerHex::fmt(&self.0, f)
+        }
+      }
+
+      impl ::core::fmt::UpperHex for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::UpperHex::fmt(&self.0, f)
+        }
+      }
+    });
+    Ok(())
+  }
+
+  // fn emit_impl_XXX(&self, output: &mut TokenStream) -> Result<()> {
+  //   let Self { outer, inner, .. } = self;
+  //   output.extend(quote! {
+  //     // XXX
+  //   });
+  //   Ok(())
+  // }
+
+  fn emit_impl_serde(&self, output: &mut TokenStream) -> Result<()> {
     let Self { outer, .. } = self;
     output.extend(quote! {
       impl ::serde::Serialize for #outer {
