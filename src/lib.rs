@@ -30,8 +30,10 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
   st.emit_input(&mut output)?;
   st.emit_impl(&mut output)?;
   st.emit_impl_ops_alg(&mut output)?;
-  st.emit_impl_ops_bit(&mut output)?;
-  st.emit_impl_int_display(&mut output)?;
+  if st.inner_base.is_int() {
+    st.emit_impl_ops_bit(&mut output)?;
+    st.emit_impl_int_display(&mut output)?;
+  }
 
   // TODO: serde macro param
   if cfg!(feature = "serde") {
@@ -48,24 +50,6 @@ struct StrongType {
   inner: Ident,
   inner_base: BaseType,
   inner_vis: Visibility,
-}
-
-enum BaseType {
-  Int { signed: bool },
-  Float,
-  Char,
-  Bool,
-}
-
-impl BaseType {
-  fn parse_err_tokens(&self) -> TokenStream {
-    match self {
-      Self::Int { .. } => quote!(::core::num::ParseIntError),
-      Self::Float => quote!(::core::num::ParseFloatError),
-      Self::Char => quote!(::core::char::ParseCharError),
-      Self::Bool => quote!(::core::str::ParseBoolError),
-    }
-  }
 }
 
 impl StrongType {
@@ -88,20 +72,59 @@ impl StrongType {
       _ => return Err(Error::new(field.ty.span(), "unexpected type")),
     };
     let inner_base = match inner.to_string().as_str() {
-        "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
+      "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
         BaseType::Int { signed: false }
-        }
-        "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {
+      }
+      "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {
         BaseType::Int { signed: true }
-        }
+      }
       "f32" | "f64" => BaseType::Float,
       "char" => BaseType::Char,
       "bool" => BaseType::Bool,
-        _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
-      };
+      _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
+    };
     let inner_vis = syn::parse2(field.vis.to_token_stream())?;
 
     Ok(StrongType { input, outer, outer_vis, inner, inner_base, inner_vis })
+  }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum BaseType {
+  Int { signed: bool },
+  Float,
+  Char,
+  Bool,
+}
+
+impl BaseType {
+  fn is_int(&self) -> bool {
+    matches!(self, BaseType::Int { .. })
+  }
+
+  fn is_float(&self) -> bool {
+    matches!(self, BaseType::Float)
+  }
+
+  fn is_char(&self) -> bool {
+    matches!(self, BaseType::Char)
+  }
+
+  fn is_bool(&self) -> bool {
+    matches!(self, BaseType::Bool)
+  }
+
+  fn is_signed(&self) -> bool {
+    matches!(self, BaseType::Int { signed: true })
+  }
+
+  fn parse_err_tokens(&self) -> TokenStream {
+    match self {
+      Self::Int { .. } => quote!(::core::num::ParseIntError),
+      Self::Float => quote!(::core::num::ParseFloatError),
+      Self::Char => quote!(::core::char::ParseCharError),
+      Self::Bool => quote!(::core::str::ParseBoolError),
+    }
   }
 }
 
