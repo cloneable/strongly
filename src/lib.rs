@@ -46,10 +46,26 @@ struct StrongType {
   outer: Ident,
   outer_vis: Visibility,
   inner: Ident,
-  inner_base: String,
-  inner_signed: bool,
-  inner_parse_err: TokenStream,
+  inner_base: BaseType,
   inner_vis: Visibility,
+}
+
+enum BaseType {
+  Int { signed: bool },
+  Float,
+  Char,
+  Bool,
+}
+
+impl BaseType {
+  fn parse_err_tokens(&self) -> TokenStream {
+    match self {
+      Self::Int { .. } => quote!(::core::num::ParseIntError),
+      Self::Float => quote!(::core::num::ParseFloatError),
+      Self::Char => quote!(::core::char::ParseCharError),
+      Self::Bool => quote!(::core::str::ParseBoolError),
+    }
+  }
 }
 
 impl StrongType {
@@ -71,31 +87,21 @@ impl StrongType {
       Type::Path(path) => path.path.require_ident()?.clone(),
       _ => return Err(Error::new(field.ty.span(), "unexpected type")),
     };
-    let (inner_base, inner_signed, inner_parse_err) =
-      match inner.to_string().as_str() {
+    let inner_base = match inner.to_string().as_str() {
         "u8" | "u16" | "u32" | "u64" | "u128" | "usize" => {
-          ("int", false, quote!(::core::num::ParseIntError))
+        BaseType::Int { signed: false }
         }
         "i8" | "i16" | "i32" | "i64" | "i128" | "isize" => {
-          ("int", true, quote!(::core::num::ParseIntError))
+        BaseType::Int { signed: true }
         }
-        "f32" | "f64" => ("float", true, quote!(::core::num::ParseFloatError)),
-        "char" => ("char", false, quote!(::core::char::ParseCharError)),
-        "bool" => ("bool", false, quote!(::core::str::ParseBoolError)),
+      "f32" | "f64" => BaseType::Float,
+      "char" => BaseType::Char,
+      "bool" => BaseType::Bool,
         _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
       };
     let inner_vis = syn::parse2(field.vis.to_token_stream())?;
 
-    Ok(StrongType {
-      input,
-      outer,
-      outer_vis,
-      inner,
-      inner_base: inner_base.into(),
-      inner_signed,
-      inner_parse_err,
-      inner_vis,
-    })
+    Ok(StrongType { input, outer, outer_vis, inner, inner_base, inner_vis })
   }
 }
 
@@ -112,7 +118,9 @@ impl StrongType {
   }
 
   fn emit_impl(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, outer_vis, inner, inner_parse_err, .. } = self;
+    let Self { outer, outer_vis, inner, inner_base, .. } = self;
+    let inner_parse_err = inner_base.parse_err_tokens();
+
     output.extend(quote! {
       impl #outer {
         // TODO: TRUE, FALSE for bool
