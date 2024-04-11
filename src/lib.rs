@@ -27,7 +27,10 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
   let mut output = TokenStream::new();
 
-  st.emit_input(&mut output)?;
+  for codegen in GENERATORS {
+    output.extend(codegen.dispatch(&st)?);
+  }
+
   st.emit_impl(&mut output)?;
   st.emit_impl_ops_alg(&mut output)?;
   if st.inner_base.is_int() {
@@ -128,18 +131,67 @@ impl BaseType {
   }
 }
 
-impl StrongType {
-  // Emit unchanged struct with the nine default derives.
-  // Deriving PartialEq,Eq also gives us StructuralPartialEq.
-  fn emit_input(&self, output: &mut TokenStream) -> Result<()> {
-    output.extend(quote! {
-      #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-      #[repr(transparent)]
-    });
-    output.extend(self.input.clone());
-    Ok(())
+trait CodeGenerator: Sync + Send {
+  fn dispatch(&self, st: &StrongType) -> Result<TokenStream> {
+    match st.inner_base {
+      BaseType::Int { signed: false } => self.emit_unsigned_int(st),
+      BaseType::Int { signed: true } => self.emit_signed_int(st),
+      BaseType::Float => self.emit_float(st),
+      BaseType::Char => self.emit_char(st),
+      BaseType::Bool => self.emit_bool(st),
+    }
   }
 
+  fn emit(&self, st: &StrongType) -> Result<TokenStream>;
+
+  fn emit_unsigned_int(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit(st)
+  }
+
+  fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit(st)
+  }
+
+  fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit(st)
+  }
+
+  fn emit_char(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit(st)
+  }
+
+  fn emit_bool(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit(st)
+  }
+}
+
+static GENERATORS: [&dyn CodeGenerator; 1] = [&InputCG];
+
+/// Emits unchanged struct with the nine default derives.
+/// Deriving PartialEq,Eq also gives us StructuralPartialEq.
+struct InputCG;
+impl CodeGenerator for InputCG {
+  fn emit_float(
+    &self,
+    StrongType { input, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
+      #[derive(Copy, Clone, Default, Debug, PartialEq, PartialOrd)]
+      #[repr(transparent)]
+      #input
+    })
+  }
+
+  fn emit(&self, StrongType { input, .. }: &StrongType) -> Result<TokenStream> {
+    Ok(quote! {
+      #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+      #[repr(transparent)]
+      #input
+    })
+  }
+}
+
+impl StrongType {
   fn emit_impl(&self, output: &mut TokenStream) -> Result<()> {
     let Self { outer, outer_vis, inner, inner_base, .. } = self;
     let inner_parse_err = inner_base.parse_err_tokens();
