@@ -27,7 +27,7 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
   st.emit_impl(&mut output)?;
   st.emit_impl_ops_alg(&mut output)?;
-  if st.inner_base.is_int() {
+  if matches!(st.inner_base, BaseType::Int { .. }) {
     st.emit_impl_ops_bit(&mut output)?;
     st.emit_impl_int_display(&mut output)?;
   }
@@ -112,26 +112,6 @@ enum BaseType {
 }
 
 impl BaseType {
-  fn is_int(&self) -> bool {
-    matches!(self, BaseType::Int { .. })
-  }
-
-  fn is_float(&self) -> bool {
-    matches!(self, BaseType::Float)
-  }
-
-  fn is_char(&self) -> bool {
-    matches!(self, BaseType::Char)
-  }
-
-  fn is_bool(&self) -> bool {
-    matches!(self, BaseType::Bool)
-  }
-
-  fn is_signed(&self) -> bool {
-    matches!(self, BaseType::Int { signed: true })
-  }
-
   fn parse_err_tokens(&self) -> TokenStream {
     match self {
       Self::Int { .. } => quote!(::core::num::ParseIntError),
@@ -469,14 +449,6 @@ impl StrongType {
     });
     Ok(())
   }
-
-  // fn emit_impl_XXX(&self, output: &mut TokenStream) -> Result<()> {
-  //   let Self { outer, inner, .. } = self;
-  //   output.extend(quote! {
-  //     // XXX
-  //   });
-  //   Ok(())
-  // }
 
   fn emit_impl_serde(&self, output: &mut TokenStream) -> Result<()> {
     let Self { outer, .. } = self;
