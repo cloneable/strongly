@@ -51,8 +51,9 @@ impl StrongType {
         String::from("Sole macro parameter must be a primitive field"),
       ));
     }
+    drop(params);
 
-    let mut item = syn::parse2::<ItemStruct>(input.clone())?;
+    let mut item = syn::parse2::<ItemStruct>(input)?;
     if !item.fields.is_empty() {
       return Err(Error::new(
         item.fields.span(),
@@ -87,7 +88,7 @@ impl StrongType {
       _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
     };
 
-    Ok(StrongType { input, outer, outer_vis, inner, inner_base })
+    Ok(Self { input, outer, outer_vis, inner, inner_base })
   }
 }
 
@@ -100,7 +101,7 @@ enum BaseType {
 }
 
 impl BaseType {
-  fn parse_err_tokens(&self) -> TokenStream {
+  fn parse_err_tokens(self) -> TokenStream {
     match self {
       Self::Int { .. } => quote!(::core::num::ParseIntError),
       Self::Float => quote!(::core::num::ParseFloatError),
@@ -123,7 +124,7 @@ trait CodeGenerator: Sync + Send {
 
   fn emit(&self, st: &StrongType) -> Result<TokenStream> {
     let _ = st;
-    Ok(Default::default())
+    Ok(TokenStream::default())
   }
 
   fn emit_unsigned_int(&self, st: &StrongType) -> Result<TokenStream> {
@@ -155,7 +156,7 @@ static GENERATORS: [&dyn CodeGenerator; 7] =
   [&InputCG, &ConstCG, &ImplCG, &IntDisplayCG, &NumOpsCG, &BitOpsCG, &SerdeCG];
 
 /// Emits unchanged struct with the nine default derives.
-/// Deriving PartialEq,Eq also gives us StructuralPartialEq.
+/// Deriving `PartialEq` also gives us `StructuralPartialEq`.
 struct InputCG;
 impl CodeGenerator for InputCG {
   fn emit_float(
@@ -283,16 +284,16 @@ impl CodeGenerator for ImplCG {
 struct NumOpsCG;
 impl CodeGenerator for NumOpsCG {
   fn emit_bool(&self, _: &StrongType) -> Result<TokenStream> {
-    Ok(Default::default())
+    Ok(TokenStream::default())
   }
 
   fn emit_char(&self, _: &StrongType) -> Result<TokenStream> {
-    Ok(Default::default())
+    Ok(TokenStream::default())
   }
 
   fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
     // TODO: make composition cleaner
-    let mut output = self.emit(&st)?;
+    let mut output = self.emit(st)?;
     let StrongType { outer, .. } = st;
     output.extend(quote! {
       impl ::core::ops::Neg for #outer {
@@ -307,7 +308,7 @@ impl CodeGenerator for NumOpsCG {
 
   fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
     // TODO: make composition cleaner
-    let mut output = self.emit(&st)?;
+    let mut output = self.emit(st)?;
     let StrongType { outer, .. } = st;
     output.extend(quote! {
       impl ::core::ops::Neg for #outer {
@@ -511,7 +512,7 @@ impl CodeGenerator for SerdeCG {
         }
       })
     } else {
-      Ok(Default::default())
+      Ok(TokenStream::default())
     }
   }
 }
