@@ -46,7 +46,6 @@ struct StrongType {
   outer_vis: Visibility,
   inner: Ident,
   inner_base: BaseType,
-  inner_vis: Visibility,
 }
 
 impl StrongType {
@@ -99,9 +98,8 @@ impl StrongType {
       "bool" => BaseType::Bool,
       _ => return Err(Error::new(field.ty.span(), "unsupported inner type")),
     };
-    let inner_vis = syn::parse2(field.vis.to_token_stream())?;
 
-    Ok(StrongType { input, outer, outer_vis, inner, inner_base, inner_vis })
+    Ok(StrongType { input, outer, outer_vis, inner, inner_base })
   }
 }
 
