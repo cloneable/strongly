@@ -32,11 +32,6 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
     st.emit_impl_int_display(&mut output)?;
   }
 
-  // TODO: serde macro param
-  if cfg!(feature = "serde") {
-    st.emit_impl_serde(&mut output)?;
-  }
-
   Ok(output)
 }
 
@@ -160,7 +155,7 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 2] = [&InputCG, &ConstCG];
+static GENERATORS: [&dyn CodeGenerator; 3] = [&InputCG, &ConstCG, &SerdeCG];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -449,23 +444,29 @@ impl StrongType {
     });
     Ok(())
   }
+}
 
-  fn emit_impl_serde(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, .. } = self;
-    output.extend(quote! {
-      impl ::serde::Serialize for #outer {
-        #[inline(always)]
-        fn serialize<S: ::serde::Serializer>(&self, s: S)
-          -> ::core::result::Result<S::Ok, S::Error>
-        { ::serde::Serialize::serialize(&self.0, s) }
-      }
-      impl<'de> ::serde::Deserialize<'de> for #outer {
-        #[inline(always)]
-        fn deserialize<D: ::serde::Deserializer<'de>>(d: D)
-          -> ::core::result::Result<Self, D::Error>
-        { ::serde::Deserialize::deserialize(d).map(Self) }
-      }
-    });
-    Ok(())
+struct SerdeCG;
+impl CodeGenerator for SerdeCG {
+  fn emit(&self, StrongType { outer, .. }: &StrongType) -> Result<TokenStream> {
+    // TODO: serde macro param
+    if cfg!(feature = "serde") {
+      Ok(quote! {
+        impl ::serde::Serialize for #outer {
+          #[inline(always)]
+          fn serialize<S: ::serde::Serializer>(&self, s: S)
+            -> ::core::result::Result<S::Ok, S::Error>
+          { ::serde::Serialize::serialize(&self.0, s) }
+        }
+        impl<'de> ::serde::Deserialize<'de> for #outer {
+          #[inline(always)]
+          fn deserialize<D: ::serde::Deserializer<'de>>(d: D)
+            -> ::core::result::Result<Self, D::Error>
+          { ::serde::Deserialize::deserialize(d).map(Self) }
+        }
+      })
+    } else {
+      Ok(Default::default())
+    }
   }
 }
