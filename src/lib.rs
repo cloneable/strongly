@@ -552,6 +552,32 @@ impl CodeGenerator for NumOpsCG {
         #[inline(always)]
         fn rem_assign(&mut self, rhs: &#outer) { self.0.rem_assign(rhs.0); }
       }
+
+      impl ::core::iter::Sum<#outer> for #outer {
+        fn sum<I: ::core::iter::Iterator<Item = #outer>>(iter: I) -> Self {
+          iter.fold(#outer::ZERO, |acc, v| acc + v)
+        }
+      }
+
+      impl<'a> ::core::iter::Sum<&'a #outer> for #outer {
+        fn sum<I: ::core::iter::Iterator<Item = &'a #outer>>(iter: I) -> Self {
+          iter.fold(#outer::ZERO, |acc, v| acc + v)
+        }
+      }
+
+      impl ::core::iter::Product<#outer> for #outer {
+        fn product<I: ::core::iter::Iterator<Item = #outer>>(iter: I) -> Self {
+          iter.fold(#outer::ONE, |acc, v| acc * v)
+        }
+      }
+
+      impl<'a> ::core::iter::Product<&'a #outer> for #outer {
+        fn product<I: ::core::iter::Iterator<Item = &'a #outer>>(
+          iter: I,
+        ) -> Self {
+          iter.fold(#outer::ONE, |acc, v| acc * v)
+        }
+      }
     })
   }
 }
