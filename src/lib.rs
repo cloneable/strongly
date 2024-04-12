@@ -28,7 +28,6 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
   st.emit_impl_ops_alg(&mut output)?;
   if matches!(st.inner_base, BaseType::Int { .. }) {
     st.emit_impl_ops_bit(&mut output)?;
-    st.emit_impl_int_display(&mut output)?;
   }
 
   Ok(output)
@@ -127,7 +126,10 @@ trait CodeGenerator: Sync + Send {
     }
   }
 
-  fn emit(&self, st: &StrongType) -> Result<TokenStream>;
+  fn emit(&self, st: &StrongType) -> Result<TokenStream> {
+    let _ = st;
+    Ok(Default::default())
+  }
 
   fn emit_unsigned_int(&self, st: &StrongType) -> Result<TokenStream> {
     self.emit_int(st)
@@ -154,8 +156,8 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 4] =
-  [&InputCG, &ConstCG, &ImplCG, &SerdeCG];
+static GENERATORS: [&dyn CodeGenerator; 5] =
+  [&InputCG, &ConstCG, &ImplCG, &IntDisplayCG, &SerdeCG];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -224,10 +226,6 @@ impl CodeGenerator for ConstCG {
         #outer_vis const FALSE: Self = Self(false);
       }
     })
-  }
-
-  fn emit(&self, StrongType { .. }: &StrongType) -> Result<TokenStream> {
-    Ok(TokenStream::default())
   }
 }
 
@@ -413,10 +411,15 @@ impl StrongType {
     });
     Ok(())
   }
+}
 
-  fn emit_impl_int_display(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, .. } = self;
-    output.extend(quote! {
+struct IntDisplayCG;
+impl CodeGenerator for IntDisplayCG {
+  fn emit_int(
+    &self,
+    StrongType { outer, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
       impl ::core::fmt::Binary for #outer {
         #[inline(always)]
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -444,8 +447,7 @@ impl StrongType {
           ::core::fmt::UpperHex::fmt(&self.0, f)
         }
       }
-    });
-    Ok(())
+    })
   }
 }
 
