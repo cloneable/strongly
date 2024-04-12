@@ -20,6 +20,9 @@ The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 
 * Default: `std`
 * `std`: Doesn't do anything at the moment.
+* `convert`: Generate implemetations of `From`/`Into` between inner and outer
+  types. Also add implementation of `Borrow` of all inner primitives except
+  floats. Provide `const` helper method to access inner primitive.
 * `serde`: Generate implementations of `Serialize` and `Deserialize` to and from
   the representation of the primitive.
 

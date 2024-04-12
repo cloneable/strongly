@@ -152,8 +152,17 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 7] =
-  [&InputCG, &ConstCG, &ImplCG, &IntDisplayCG, &NumOpsCG, &BitOpsCG, &SerdeCG];
+static GENERATORS: [&dyn CodeGenerator; 9] = [
+  &InputCG,
+  &ConstCG,
+  &ImplCG,
+  &ConvertCG,
+  &BorrowCG,
+  &IntDisplayCG,
+  &NumOpsCG,
+  &BitOpsCG,
+  &SerdeCG,
+];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving `PartialEq` also gives us `StructuralPartialEq`.
@@ -237,10 +246,6 @@ impl CodeGenerator for ImplCG {
         #[must_use]
         #[inline(always)]
         #outer_vis const fn new(inner: #inner) -> Self { Self(inner) }
-
-        #[must_use]
-        #[inline(always)]
-        #outer_vis const fn into_inner(self) -> #inner { self.0 }
       }
 
       impl ::core::fmt::Display for #outer {
@@ -256,28 +261,64 @@ impl CodeGenerator for ImplCG {
           #inner::from_str(s).map(Self)
         }
       }
-
-      // TODO: macro flag param
-      impl ::core::convert::From<#inner> for #outer {
-        #[must_use]
-        #[inline(always)]
-        fn from(inner: #inner) -> Self { Self(inner) }
-      }
-
-      // TODO: macro flag param
-      impl ::core::convert::From<#outer> for #inner {
-        #[must_use]
-        #[inline(always)]
-        fn from(outer: #outer) -> Self { outer.0 }
-      }
-
-      // TODO: macro flag param
-      impl ::core::borrow::Borrow<#inner> for #outer {
-        #[must_use]
-        #[inline(always)]
-        fn borrow(&self) -> &#inner { &self.0 }
-      }
     })
+  }
+}
+
+struct ConvertCG;
+impl CodeGenerator for ConvertCG {
+  fn emit(
+    &self,
+    StrongType { outer, outer_vis, inner, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    if cfg!(feature = "convert") {
+      Ok(quote! {
+        impl #outer {
+          #[must_use]
+          #[inline(always)]
+          #outer_vis const fn inner(self) -> #inner { self.0 }
+        }
+
+        impl ::core::convert::From<#inner> for #outer {
+          #[must_use]
+          #[inline(always)]
+          fn from(inner: #inner) -> Self { Self(inner) }
+        }
+
+        impl ::core::convert::From<#outer> for #inner {
+          #[must_use]
+          #[inline(always)]
+          fn from(outer: #outer) -> Self { outer.0 }
+        }
+      })
+    } else {
+      Ok(TokenStream::default())
+    }
+  }
+}
+
+struct BorrowCG;
+impl CodeGenerator for BorrowCG {
+  fn emit_float(&self, _: &StrongType) -> Result<TokenStream> {
+    // floats don't implement Eq,Ord,Hash
+    Ok(TokenStream::default())
+  }
+
+  fn emit(
+    &self,
+    StrongType { outer, inner, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    if cfg!(feature = "convert") {
+      Ok(quote! {
+        impl ::core::borrow::Borrow<#inner> for #outer {
+          #[must_use]
+          #[inline(always)]
+          fn borrow(&self) -> &#inner { &self.0 }
+        }
+      })
+    } else {
+      Ok(TokenStream::default())
+    }
   }
 }
 
