@@ -685,6 +685,20 @@ impl CodeGenerator for IntDisplayCG {
           ::core::fmt::UpperHex::fmt(&self.0, f)
         }
       }
+
+      impl ::core::fmt::LowerExp for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::LowerExp::fmt(&self.0, f)
+        }
+      }
+
+      impl ::core::fmt::UpperExp for #outer {
+        #[inline(always)]
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          ::core::fmt::UpperExp::fmt(&self.0, f)
+        }
+      }
     })
   }
 }
