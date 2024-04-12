@@ -1,7 +1,8 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-  spanned::Spanned, Error, Fields, ItemStruct, Result, Type, Visibility,
+  spanned::Spanned, Error, Fields, FieldsUnnamed, ItemStruct, Result, Type,
+  Visibility,
 };
 
 #[proc_macro_attribute]
@@ -16,15 +17,7 @@ pub fn typed(
 }
 
 fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
-  // TODO: allow unit struct + inner type as macro param.
-  if !params.is_empty() {
-    return Err(Error::new(
-      Span::call_site(),
-      String::from("This macro does not (yet) accept parameters"),
-    ));
-  }
-
-  let st = StrongType::parse(input)?;
+  let st = StrongType::parse(params, input)?;
 
   let mut output = TokenStream::new();
 
@@ -57,19 +50,38 @@ struct StrongType {
 }
 
 impl StrongType {
-  fn parse(input: TokenStream) -> Result<Self> {
-    let item = syn::parse2::<ItemStruct>(input.clone())?;
+  fn parse(params: TokenStream, input: TokenStream) -> Result<Self> {
+    if params.is_empty() {
+      return Err(Error::new(
+        Span::call_site(),
+        String::from("Sole macro parameter must be a primitive field"),
+      ));
+    }
+    let fields: FieldsUnnamed = syn::parse_quote!( ( #params ) );
+    if fields.unnamed.len() != 1 {
+      return Err(Error::new(
+        Span::call_site(),
+        String::from("Sole macro parameter must be a primitive field"),
+      ));
+    }
+
+    let mut item = syn::parse2::<ItemStruct>(input.clone())?;
+    if !item.fields.is_empty() {
+      return Err(Error::new(
+        item.fields.span(),
+        String::from("Expected unit struct"),
+      ));
+    }
+    item.fields = Fields::Unnamed(fields);
+    let input = item.to_token_stream();
 
     let outer = item.ident.clone();
     // TODO: find out why dtolnay doesn't like Clone here.
     let outer_vis = syn::parse2(item.vis.to_token_stream())?;
 
     let Fields::Unnamed(fields) = &item.fields else {
-      return Err(Error::new(item.span(), "not tuple struct"));
+      panic!("not tuple struct");
     };
-    if fields.unnamed.len() != 1 {
-      return Err(Error::new(item.span(), "not newtype struct"));
-    }
     let field = fields.unnamed.first().expect("first element");
     let inner = match &field.ty {
       Type::Path(path) => path.path.require_ident()?.clone(),
