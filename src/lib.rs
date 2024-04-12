@@ -25,7 +25,6 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
     output.extend(codegen.dispatch(&st)?);
   }
 
-  st.emit_impl(&mut output)?;
   st.emit_impl_ops_alg(&mut output)?;
   if matches!(st.inner_base, BaseType::Int { .. }) {
     st.emit_impl_ops_bit(&mut output)?;
@@ -155,7 +154,8 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 3] = [&InputCG, &ConstCG, &SerdeCG];
+static GENERATORS: [&dyn CodeGenerator; 4] =
+  [&InputCG, &ConstCG, &ImplCG, &SerdeCG];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -231,12 +231,14 @@ impl CodeGenerator for ConstCG {
   }
 }
 
-impl StrongType {
-  fn emit_impl(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, outer_vis, inner, inner_base, .. } = self;
+struct ImplCG;
+impl CodeGenerator for ImplCG {
+  fn emit(
+    &self,
+    StrongType { outer, outer_vis, inner, inner_base, .. }: &StrongType,
+  ) -> Result<TokenStream> {
     let inner_parse_err = inner_base.parse_err_tokens();
-
-    output.extend(quote! {
+    Ok(quote! {
       impl #outer {
         #[must_use]
         #[inline(always)]
@@ -281,10 +283,11 @@ impl StrongType {
         #[inline(always)]
         fn borrow(&self) -> &#inner { &self.0 }
       }
-    });
-    Ok(())
+    })
   }
+}
 
+impl StrongType {
   fn emit_impl_ops_alg(&self, output: &mut TokenStream) -> Result<()> {
     let Self { outer, .. } = self;
     output.extend(quote! {
