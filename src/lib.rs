@@ -145,10 +145,14 @@ trait CodeGenerator: Sync + Send {
   fn emit(&self, st: &StrongType) -> Result<TokenStream>;
 
   fn emit_unsigned_int(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit(st)
+    self.emit_int(st)
   }
 
   fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit_int(st)
+  }
+
+  fn emit_int(&self, st: &StrongType) -> Result<TokenStream> {
     self.emit(st)
   }
 
@@ -165,7 +169,7 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 1] = [&InputCG];
+static GENERATORS: [&dyn CodeGenerator; 2] = [&InputCG, &ConstCG];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -191,6 +195,56 @@ impl CodeGenerator for InputCG {
   }
 }
 
+struct ConstCG;
+impl CodeGenerator for ConstCG {
+  fn emit_int(
+    &self,
+    StrongType { outer, outer_vis, inner, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
+      impl #outer {
+        #outer_vis const MIN: Self = Self(#inner::MIN);
+        #outer_vis const MAX: Self = Self(#inner::MAX);
+        #outer_vis const BITS: u32 = #inner::BITS;
+
+        #outer_vis const ZERO: Self = Self(0);
+        #outer_vis const ONE: Self = Self(1);
+      }
+    })
+  }
+
+  fn emit_float(
+    &self,
+    StrongType { outer, outer_vis, inner, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
+      impl #outer {
+        #outer_vis const MIN: Self = Self(#inner::MIN);
+        #outer_vis const MAX: Self = Self(#inner::MAX);
+
+        #outer_vis const ZERO: Self = Self(0.);
+        #outer_vis const ONE: Self = Self(1.);
+      }
+    })
+  }
+
+  fn emit_bool(
+    &self,
+    StrongType { outer, outer_vis, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
+      impl #outer {
+        #outer_vis const TRUE: Self = Self(true);
+        #outer_vis const FALSE: Self = Self(false);
+      }
+    })
+  }
+
+  fn emit(&self, StrongType { .. }: &StrongType) -> Result<TokenStream> {
+    Ok(TokenStream::default())
+  }
+}
+
 impl StrongType {
   fn emit_impl(&self, output: &mut TokenStream) -> Result<()> {
     let Self { outer, outer_vis, inner, inner_base, .. } = self;
@@ -198,12 +252,6 @@ impl StrongType {
 
     output.extend(quote! {
       impl #outer {
-        // TODO: TRUE, FALSE for bool
-        // TODO: ONE, ZERO for numbers
-        #outer_vis const MIN: Self = Self(#inner::MIN);
-        #outer_vis const MAX: Self = Self(#inner::MAX);
-        #outer_vis const BITS: u32 = #inner::BITS;
-
         #[must_use]
         #[inline(always)]
         #outer_vis const fn new(inner: #inner) -> Self { Self(inner) }
