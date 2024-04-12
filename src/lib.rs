@@ -366,89 +366,191 @@ impl CodeGenerator for NumOpsCG {
     let StrongType { outer, .. } = st;
     output.extend(quote! {
       impl ::core::ops::Neg for #outer {
-        type Output = Self;
+        type Output = #outer;
         #[must_use]
         #[inline(always)]
-        fn neg(self) -> Self::Output { Self(self.0.neg()) }
+        fn neg(self) -> Self::Output { #outer(self.0.neg()) }
+      }
+      impl ::core::ops::Neg for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn neg(self) -> Self::Output { #outer(self.0.neg()) }
       }
     });
     Ok(output)
   }
 
   fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
-    // TODO: make composition cleaner
-    let mut output = self.emit(st)?;
-    let StrongType { outer, .. } = st;
-    output.extend(quote! {
-      impl ::core::ops::Neg for #outer {
-        type Output = Self;
-        #[must_use]
-        #[inline(always)]
-        fn neg(self) -> Self::Output { Self(self.0.neg()) }
-      }
-    });
-    Ok(output)
+    self.emit_signed_int(st)
   }
 
   fn emit(&self, StrongType { outer, .. }: &StrongType) -> Result<TokenStream> {
     Ok(quote! {
-      impl ::core::ops::Add for #outer {
-        type Output = Self;
+      impl ::core::ops::Add<#outer> for #outer {
+        type Output = #outer;
         #[must_use]
         #[inline(always)]
-        fn add(self, other: Self) -> Self::Output { Self(self.0.add(other.0)) }
+        fn add(self, rhs: #outer) -> Self::Output { #outer(self.0.add(rhs.0)) }
       }
-
-      impl ::core::ops::AddAssign for #outer {
-        #[inline(always)]
-        fn add_assign(&mut self, other: Self) { self.0.add_assign(other.0); }
-      }
-
-      impl ::core::ops::Sub for #outer {
-        type Output = Self;
+      impl ::core::ops::Add<#outer> for &#outer {
+        type Output = #outer;
         #[must_use]
         #[inline(always)]
-        fn sub(self, other: Self) -> Self::Output { Self(self.0.sub(other.0)) }
+        fn add(self, rhs: #outer) -> Self::Output { #outer(self.0.add(rhs.0)) }
       }
-
-      impl ::core::ops::SubAssign for #outer {
-        #[inline(always)]
-        fn sub_assign(&mut self, other: Self) { self.0.sub_assign(other.0); }
-      }
-
-      impl ::core::ops::Mul for #outer {
-        type Output = Self;
+      impl ::core::ops::Add<&#outer> for #outer {
+        type Output = #outer;
         #[must_use]
         #[inline(always)]
-        fn mul(self, other: Self) -> Self::Output { Self(self.0.mul(other.0)) }
+        fn add(self, rhs: &#outer) -> Self::Output { #outer(self.0.add(rhs.0)) }
       }
-
-      impl ::core::ops::MulAssign for #outer {
-        #[inline(always)]
-        fn mul_assign(&mut self, other: Self) { self.0.mul_assign(other.0); }
-      }
-
-      impl ::core::ops::Div for #outer {
-        type Output = Self;
+      impl ::core::ops::Add<&#outer> for &#outer {
+        type Output = #outer;
         #[must_use]
         #[inline(always)]
-        fn div(self, other: Self) -> Self::Output { Self(self.0.div(other.0)) }
+        fn add(self, rhs: &#outer) -> Self::Output { #outer(self.0.add(rhs.0)) }
       }
 
-      impl ::core::ops::DivAssign for #outer {
+      impl ::core::ops::AddAssign<#outer> for #outer {
         #[inline(always)]
-        fn div_assign(&mut self, other: Self) { self.0.div_assign(other.0); }
+        fn add_assign(&mut self, rhs: #outer) { self.0.add_assign(rhs.0); }
+      }
+      impl ::core::ops::AddAssign<&#outer> for #outer {
+        #[inline(always)]
+        fn add_assign(&mut self, rhs: &#outer) { self.0.add_assign(rhs.0); }
       }
 
-      impl ::core::ops::Rem for #outer {
-        type Output = Self;
+      impl ::core::ops::Sub<#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
         #[inline(always)]
-        fn rem(self, other: Self) -> Self::Output { Self(self.0.rem(other.0)) }
+        fn sub(self, rhs: #outer) -> Self::Output { #outer(self.0.sub(rhs.0)) }
+      }
+      impl ::core::ops::Sub<&#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn sub(self, rhs: &#outer) -> Self::Output { #outer(self.0.sub(rhs.0)) }
+      }
+      impl ::core::ops::Sub<#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn sub(self, rhs: #outer) -> Self::Output { #outer(self.0.sub(rhs.0)) }
+      }
+      impl ::core::ops::Sub<&#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn sub(self, rhs: &#outer) -> Self::Output { #outer(self.0.sub(rhs.0)) }
       }
 
-      impl ::core::ops::RemAssign for #outer {
+      impl ::core::ops::SubAssign<#outer> for #outer {
         #[inline(always)]
-        fn rem_assign(&mut self, other: Self) { self.0.rem_assign(other.0); }
+        fn sub_assign(&mut self, rhs: #outer) { self.0.sub_assign(rhs.0); }
+      }
+      impl ::core::ops::SubAssign<&#outer> for #outer {
+        #[inline(always)]
+        fn sub_assign(&mut self, rhs: &#outer) { self.0.sub_assign(rhs.0); }
+      }
+
+      impl ::core::ops::Mul<#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn mul(self, rhs: #outer) -> Self::Output { #outer(self.0.mul(rhs.0)) }
+      }
+      impl ::core::ops::Mul<&#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn mul(self, rhs: &#outer) -> Self::Output { #outer(self.0.mul(rhs.0)) }
+      }
+      impl ::core::ops::Mul<#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn mul(self, rhs: #outer) -> Self::Output { #outer(self.0.mul(rhs.0)) }
+      }
+      impl ::core::ops::Mul<&#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn mul(self, rhs: &#outer) -> Self::Output { #outer(self.0.mul(rhs.0)) }
+      }
+
+      impl ::core::ops::MulAssign<#outer> for #outer {
+        #[inline(always)]
+        fn mul_assign(&mut self, rhs: #outer) { self.0.mul_assign(rhs.0); }
+      }
+      impl ::core::ops::MulAssign<&#outer> for #outer {
+        #[inline(always)]
+        fn mul_assign(&mut self, rhs: &#outer) { self.0.mul_assign(rhs.0); }
+      }
+
+      impl ::core::ops::Div<#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn div(self, rhs: #outer) -> Self::Output { #outer(self.0.div(rhs.0)) }
+      }
+      impl ::core::ops::Div<&#outer> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn div(self, rhs: &#outer) -> Self::Output { #outer(self.0.div(rhs.0)) }
+      }
+      impl ::core::ops::Div<#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn div(self, rhs: #outer) -> Self::Output { #outer(self.0.div(rhs.0)) }
+      }
+      impl ::core::ops::Div<&#outer> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn div(self, rhs: &#outer) -> Self::Output { #outer(self.0.div(rhs.0)) }
+      }
+
+      impl ::core::ops::DivAssign<#outer> for #outer {
+        #[inline(always)]
+        fn div_assign(&mut self, rhs: #outer) { self.0.div_assign(rhs.0); }
+      }
+      impl ::core::ops::DivAssign<&#outer> for #outer {
+        #[inline(always)]
+        fn div_assign(&mut self, rhs: &#outer) { self.0.div_assign(rhs.0); }
+      }
+
+      impl ::core::ops::Rem<#outer> for #outer {
+        type Output = #outer;
+        #[inline(always)]
+        fn rem(self, rhs: #outer) -> Self::Output { #outer(self.0.rem(rhs.0)) }
+      }
+      impl ::core::ops::Rem<&#outer> for #outer {
+        type Output = #outer;
+        #[inline(always)]
+        fn rem(self, rhs: &#outer) -> Self::Output { #outer(self.0.rem(rhs.0)) }
+      }
+      impl ::core::ops::Rem<#outer> for &#outer {
+        type Output = #outer;
+        #[inline(always)]
+        fn rem(self, rhs: #outer) -> Self::Output { #outer(self.0.rem(rhs.0)) }
+      }
+      impl ::core::ops::Rem<&#outer> for &#outer {
+        type Output = #outer;
+        #[inline(always)]
+        fn rem(self, rhs: &#outer) -> Self::Output { #outer(self.0.rem(rhs.0)) }
+      }
+
+      impl ::core::ops::RemAssign<#outer> for #outer {
+        #[inline(always)]
+        fn rem_assign(&mut self, rhs: #outer) { self.0.rem_assign(rhs.0); }
+      }
+      impl ::core::ops::RemAssign<&#outer> for #outer {
+        #[inline(always)]
+        fn rem_assign(&mut self, rhs: &#outer) { self.0.rem_assign(rhs.0); }
       }
     })
   }
