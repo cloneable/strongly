@@ -23,6 +23,7 @@ The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 * `convert`: Generate implemetations of `From`/`Into` between inner and outer
   types. Also add implementation of `Borrow` of all inner primitives except
   floats. Provide `const` helper method to access inner primitive.
+* `deref`: Generate implementations of `Deref` and `DerefMut`.
 * `serde`: Generate implementations of `Serialize` and `Deserialize` to and from
   the representation of the primitive.
 

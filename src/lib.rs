@@ -152,12 +152,13 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 9] = [
+static GENERATORS: [&dyn CodeGenerator; 10] = [
   &InputCG,
   &ConstCG,
   &ImplCG,
   &ConvertCG,
   &BorrowCG,
+  &DerefCG,
   &IntDisplayCG,
   &NumOpsCG,
   &BitOpsCG,
@@ -314,6 +315,33 @@ impl CodeGenerator for BorrowCG {
           #[must_use]
           #[inline(always)]
           fn borrow(&self) -> &#inner { &self.0 }
+        }
+      })
+    } else {
+      Ok(TokenStream::default())
+    }
+  }
+}
+
+struct DerefCG;
+impl CodeGenerator for DerefCG {
+  fn emit(
+    &self,
+    StrongType { outer, inner, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    if cfg!(feature = "deref") {
+      Ok(quote! {
+        impl ::core::ops::Deref for #outer {
+          type Target = #inner;
+          #[must_use]
+          #[inline(always)]
+          fn deref(&self) -> &#inner { &self.0 }
+        }
+
+        impl ::core::ops::DerefMut for #outer {
+          #[must_use]
+          #[inline(always)]
+          fn deref_mut(&mut self) -> &mut #inner { &mut self.0 }
         }
       })
     } else {
