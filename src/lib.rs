@@ -63,7 +63,7 @@ impl StrongType {
     let input = item.to_token_stream();
 
     let outer = item.ident.clone();
-    // TODO: find out why dtolnay doesn't like Clone here.
+    // No way to clone Visibility?
     let outer_vis = syn::parse2(item.vis.to_token_stream())?;
 
     let Fields::Unnamed(fields) = &item.fields else {
