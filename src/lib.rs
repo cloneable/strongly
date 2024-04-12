@@ -25,11 +25,6 @@ fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
     output.extend(codegen.dispatch(&st)?);
   }
 
-  st.emit_impl_ops_alg(&mut output)?;
-  if matches!(st.inner_base, BaseType::Int { .. }) {
-    st.emit_impl_ops_bit(&mut output)?;
-  }
-
   Ok(output)
 }
 
@@ -156,8 +151,15 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 5] =
-  [&InputCG, &ConstCG, &ImplCG, &IntDisplayCG, &SerdeCG];
+static GENERATORS: [&dyn CodeGenerator; 7] = [
+  &InputCG,
+  &ConstCG,
+  &ImplCG,
+  &IntDisplayCG,
+  &NumOpsCG,
+  &IntBitOpsCG,
+  &SerdeCG,
+];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -285,10 +287,48 @@ impl CodeGenerator for ImplCG {
   }
 }
 
-impl StrongType {
-  fn emit_impl_ops_alg(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, .. } = self;
+struct NumOpsCG;
+impl CodeGenerator for NumOpsCG {
+  fn emit_bool(&self, _: &StrongType) -> Result<TokenStream> {
+    Ok(Default::default())
+  }
+
+  fn emit_char(&self, _: &StrongType) -> Result<TokenStream> {
+    Ok(Default::default())
+  }
+
+  fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
+    // TODO: make composition cleaner
+    let mut output = self.emit(&st)?;
+    let StrongType { outer, .. } = st;
     output.extend(quote! {
+      impl ::core::ops::Neg for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn neg(self) -> Self::Output { Self(self.0.neg()) }
+      }
+    });
+    Ok(output)
+  }
+
+  fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
+    // TODO: make composition cleaner
+    let mut output = self.emit(&st)?;
+    let StrongType { outer, .. } = st;
+    output.extend(quote! {
+      impl ::core::ops::Neg for #outer {
+        type Output = Self;
+        #[must_use]
+        #[inline(always)]
+        fn neg(self) -> Self::Output { Self(self.0.neg()) }
+      }
+    });
+    Ok(output)
+  }
+
+  fn emit(&self, StrongType { outer, .. }: &StrongType) -> Result<TokenStream> {
+    Ok(quote! {
       impl ::core::ops::Add for #outer {
         type Output = Self;
         #[must_use]
@@ -347,13 +387,17 @@ impl StrongType {
         #[inline(always)]
         fn rem_assign(&mut self, other: Self) { self.0.rem_assign(other.0); }
       }
-    });
-    Ok(())
+    })
   }
+}
 
-  fn emit_impl_ops_bit(&self, output: &mut TokenStream) -> Result<()> {
-    let Self { outer, .. } = self;
-    output.extend(quote! {
+struct IntBitOpsCG;
+impl CodeGenerator for IntBitOpsCG {
+  fn emit_int(
+    &self,
+    StrongType { outer, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    Ok(quote! {
       impl ::core::ops::BitAnd for #outer {
         type Output = Self;
         #[must_use]
@@ -408,8 +452,7 @@ impl StrongType {
         #[inline(always)]
         fn not(self) -> Self::Output { Self(self.0.not()) }
       }
-    });
-    Ok(())
+    })
   }
 }
 
