@@ -151,15 +151,8 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 7] = [
-  &InputCG,
-  &ConstCG,
-  &ImplCG,
-  &IntDisplayCG,
-  &NumOpsCG,
-  &IntBitOpsCG,
-  &SerdeCG,
-];
+static GENERATORS: [&dyn CodeGenerator; 7] =
+  [&InputCG, &ConstCG, &ImplCG, &IntDisplayCG, &NumOpsCG, &BitOpsCG, &SerdeCG];
 
 /// Emits unchanged struct with the nine default derives.
 /// Deriving PartialEq,Eq also gives us StructuralPartialEq.
@@ -391,8 +384,12 @@ impl CodeGenerator for NumOpsCG {
   }
 }
 
-struct IntBitOpsCG;
-impl CodeGenerator for IntBitOpsCG {
+struct BitOpsCG;
+impl CodeGenerator for BitOpsCG {
+  fn emit_bool(&self, st: &StrongType) -> Result<TokenStream> {
+    self.emit_int(st)
+  }
+
   fn emit_int(
     &self,
     StrongType { outer, .. }: &StrongType,
