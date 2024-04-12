@@ -16,6 +16,7 @@ pub fn typed(
 }
 
 fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
+  // TODO: allow unit struct + inner type as macro param.
   if !params.is_empty() {
     return Err(Error::new(
       Span::call_site(),
