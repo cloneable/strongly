@@ -3,6 +3,14 @@
 version = 3
 
 [[package]]
+name = "e2e-tests-no_std"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "strongly",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"

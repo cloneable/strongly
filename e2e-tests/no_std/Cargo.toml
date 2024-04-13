@@ -1,0 +1,9 @@
+[package]
+name = "e2e-tests-no_std"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = { version = "1", default-features = false }
+strongly = { path = "../..", features = ["std", "convert", "serde", "deref"] }
