@@ -1,13 +1,11 @@
 macro_rules! types {
   (  $($inner:ident)+ ) => {
-    mod types {
-      $(
-        paste::paste! {
-          #[::strongly::typed($inner)]
-          pub struct [<Strong $inner>];
-        }
-      )+
-    }
+    $(
+      paste::paste! {
+        #[::strongly::typed($inner)]
+        pub struct [<Strong $inner>];
+      }
+    )+
   };
 }
 
@@ -19,16 +17,41 @@ macro_rules! tests {
       ::paste::paste! {
         #[test]
         fn [<test_size_align_ $inner>]() {
-          use types::[<Strong $inner>] as Strong;
+          use $inner as Inner;
+          use [<Strong $inner>] as Outer;
           ::core::assert_eq!(
-            ::core::mem::size_of::<$inner>(),
-            ::core::mem::size_of::<Strong>(),
+            ::core::mem::size_of::<Inner>(),
+            ::core::mem::size_of::<Outer>(),
           );
           ::core::assert_eq!(
-            ::core::mem::align_of::<$inner>(),
-            ::core::mem::align_of::<Strong>(),
+            ::core::mem::align_of::<Inner>(),
+            ::core::mem::align_of::<Outer>(),
           );
         }
+
+        #[test]
+        fn [<test_default_ $inner>]() {
+          use $inner as Inner;
+          use [<Strong $inner>] as Outer;
+          ::core::assert_eq!(
+            Inner::default(),
+            Outer::default().0,
+          );
+        }
+
+        #[test]
+        fn [<test_new_ $inner>]() {
+          use $inner as Inner;
+          use [<Strong $inner>] as Outer;
+          ::core::assert_eq!(
+            Inner::default(),
+            Outer::new(Inner::default()).0
+          );
+        }
+
+        // TODO: Debug
+        // TODO: Display, Binary, Octal, Lower/UpperHex, Lower/UpperExp
+        // TODO: FromStr
       }
     )+
   }
