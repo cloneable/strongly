@@ -1,8 +1,11 @@
 [package]
 name = "strongly"
-version = "0.0.1"
-description = "[WIP] A proc macro to create strongly-typed primitives"
+version = "0.0.2"
+description = "A proc macro to create strongly-typed primitives"
+authors = ["Folke <folke@gmail.com>"]
 license = "MIT OR Apache-2.0"
+categories = ["data-structures", "rust-patterns"]
+keywords = []
 repository = "https://github.com/cloneable/strongly"
 exclude = [".cargo/", ".github/", ".gitignore", "rustfmt.toml"]
 edition = "2021"

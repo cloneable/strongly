@@ -1,6 +1,9 @@
-# strongly::typed
+# `strongly::typed`
 
-[WIP] A proc macro to create strongly-typed primitives.
+A proc macro to create strongly-typed primitives.
+
+> [!CAUTION]
+> Work in progress. Do not use yet. More details to follow.
 
 ## Usage
 
@@ -19,7 +22,8 @@ The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 ## Features
 
 * Default: `std`
-* `std`: Doesn't do anything at the moment.
+* `std`: Doesn't do anything at the moment. None of the generated code requires
+  the std lib.
 * `convert`: Generate implemetations of `From`/`Into` between inner and outer
   types. Also add implementation of `Borrow` of all inner primitives except
   floats. Provide `const` helper method to access inner primitive.
