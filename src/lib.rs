@@ -152,7 +152,7 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 10] = [
+static GENERATORS: [&dyn CodeGenerator; 11] = [
   &InputCG,
   &ConstCG,
   &ImplCG,
@@ -162,6 +162,7 @@ static GENERATORS: [&dyn CodeGenerator; 10] = [
   &IntDisplayCG,
   &NumOpsCG,
   &BitOpsCG,
+  &ShiftOpsCG,
   &SerdeCG,
 ];
 
@@ -663,6 +664,82 @@ impl CodeGenerator for BitOpsCG {
         #[must_use]
         #[inline(always)]
         fn not(self) -> Self::Output { Self(self.0.not()) }
+      }
+    })
+  }
+}
+
+struct ShiftOpsCG;
+impl CodeGenerator for ShiftOpsCG {
+  fn emit_int(
+    &self,
+    StrongType { outer, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    // TODO: rhs: all other integers
+    Ok(quote! {
+      impl ::core::ops::Shl<usize> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shl(self, rhs: usize) -> Self::Output { #outer(self.0.shl(rhs)) }
+      }
+      impl ::core::ops::Shl<&usize> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shl(self, rhs: &usize) -> Self::Output { #outer(self.0.shl(rhs)) }
+      }
+      impl ::core::ops::Shl<usize> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shl(self, rhs: usize) -> Self::Output { #outer(self.0.shl(rhs)) }
+      }
+      impl ::core::ops::Shl<&usize> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shl(self, rhs: &usize) -> Self::Output { #outer(self.0.shl(rhs)) }
+      }
+      impl ::core::ops::ShlAssign<usize> for #outer {
+        #[inline(always)]
+        fn shl_assign(&mut self, rhs: usize) { self.0.shl_assign(rhs) }
+      }
+      impl ::core::ops::ShlAssign<&usize> for #outer {
+        #[inline(always)]
+        fn shl_assign(&mut self, rhs: &usize) { self.0.shl_assign(rhs) }
+      }
+      impl ::core::ops::Shr<usize> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shr(self, rhs: usize) -> Self::Output { #outer(self.0.shr(rhs)) }
+      }
+      impl ::core::ops::Shr<&usize> for #outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shr(self, rhs: &usize) -> Self::Output { #outer(self.0.shr(rhs)) }
+      }
+      impl ::core::ops::Shr<usize> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shr(self, rhs: usize) -> Self::Output { #outer(self.0.shr(rhs)) }
+      }
+      impl ::core::ops::Shr<&usize> for &#outer {
+        type Output = #outer;
+        #[must_use]
+        #[inline(always)]
+        fn shr(self, rhs: &usize) -> Self::Output { #outer(self.0.shr(rhs)) }
+      }
+      impl ::core::ops::ShrAssign<usize> for #outer {
+        #[inline(always)]
+        fn shr_assign(&mut self, rhs: usize) { self.0.shr_assign(rhs) }
+      }
+      impl ::core::ops::ShrAssign<&usize> for #outer {
+        #[inline(always)]
+        fn shr_assign(&mut self, rhs: &usize) { self.0.shr_assign(rhs) }
       }
     })
   }
