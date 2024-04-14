@@ -21,15 +21,15 @@ The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 
 ## Features
 
-* Default: `std`
-* `full`: Full feature set.
-* `std`: Doesn't do anything at the moment. None of the generated code requires
-  the std lib.
-* `convert`: Generate implemetations of `From`/`Into` between inner and outer
+* Default: __std__
+* __full__: Full feature set.
+* __std__: Doesn't do anything at the moment. None of the generated code requires
+  `std`.
+* __convert__: Generate implemetations of `From`/`Into` between inner and outer
   types. Also add implementation of `Borrow` of all inner primitives except
   floats. Provide `const` helper method to access inner primitive.
-* `deref`: Generate implementations of `Deref` and `DerefMut`.
-* `serde`: Generate implementations of `Serialize` and `Deserialize` to and from
+* __deref__: Generate implementations of `Deref` and `DerefMut`.
+* __serde__: Generate implementations of `Serialize` and `Deserialize` to and from
   the representation of the primitive.
 
 ## Caveats
