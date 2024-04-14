@@ -6,4 +6,4 @@ publish = false
 
 [dependencies]
 serde = { version = "1", default-features = false }
-strongly = { path = "../..", features = ["std", "convert", "serde", "deref"] }
+strongly = { path = "../..", features = ["full"] }

@@ -20,6 +20,7 @@ proc-macro = true
 
 [features]
 default = ["std"]
+full = ["std", "convert", "deref", "serde"]
 std = []
 convert = []
 deref = []

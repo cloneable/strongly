@@ -22,6 +22,7 @@ The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 ## Features
 
 * Default: `std`
+* `full`: Full feature set.
 * `std`: Doesn't do anything at the moment. None of the generated code requires
   the std lib.
 * `convert`: Generate implemetations of `From`/`Into` between inner and outer
