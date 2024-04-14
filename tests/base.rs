@@ -1,15 +1,4 @@
-macro_rules! types {
-  (  $($inner:ident)+ ) => {
-    $(
-      paste::paste! {
-        #[::strongly::typed($inner)]
-        pub struct [<Strong $inner>];
-      }
-    )+
-  };
-}
-
-types!(i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f32 f64 char bool);
+mod types;
 
 macro_rules! tests {
   ( $($inner:ident)+ ) => {
@@ -18,7 +7,7 @@ macro_rules! tests {
         #[test]
         fn [<test_size_align_ $inner>]() {
           use $inner as Inner;
-          use [<Strong $inner>] as Outer;
+          use types::[<Strong $inner>] as Outer;
           ::core::assert_eq!(
             ::core::mem::size_of::<Inner>(),
             ::core::mem::size_of::<Outer>(),
@@ -32,7 +21,7 @@ macro_rules! tests {
         #[test]
         fn [<test_default_ $inner>]() {
           use $inner as Inner;
-          use [<Strong $inner>] as Outer;
+          use types::[<Strong $inner>] as Outer;
           ::core::assert_eq!(
             Inner::default(),
             Outer::default().0,
@@ -42,7 +31,7 @@ macro_rules! tests {
         #[test]
         fn [<test_new_ $inner>]() {
           use $inner as Inner;
-          use [<Strong $inner>] as Outer;
+          use types::[<Strong $inner>] as Outer;
           ::core::assert_eq!(
             Inner::default(),
             Outer::new(Inner::default()).0
