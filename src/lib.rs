@@ -1,3 +1,4 @@
+mod methods;
 mod shift_ops;
 
 use proc_macro2::{Ident, Span, TokenStream};
@@ -154,10 +155,11 @@ trait CodeGenerator: Sync + Send {
   }
 }
 
-static GENERATORS: [&dyn CodeGenerator; 11] = [
+static GENERATORS: [&dyn CodeGenerator; 12] = [
   &InputCG,
   &ConstCG,
   &ImplCG,
+  &methods::MethodsCG,
   &ConvertCG,
   &BorrowCG,
   &DerefCG,
