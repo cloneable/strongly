@@ -68,3 +68,64 @@ extern "C" {
 pub struct FfiStruct {
   field: StronglyTypedU32,
 }
+
+const _: () = {
+  use ::core::clone::Clone;
+  use ::core::cmp::{Eq, Ord, PartialEq, PartialOrd};
+  use ::core::default::Default;
+  use ::core::fmt::{
+    Binary, Debug, Display, LowerExp, LowerHex, Octal, UpperExp, UpperHex,
+  };
+  use ::core::hash::Hash;
+  use ::core::marker::{Copy, Send, Sized, Sync, Unpin};
+  use ::core::panic::{RefUnwindSafe, UnwindSafe};
+  use ::core::str::FromStr;
+  use ::static_assertions::assert_impl_all;
+
+  macro_rules! assert_int_traits {
+    ( $($outer:ty),* ) => {
+      $(
+        assert_impl_all!($outer: Sized, Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
+        assert_impl_all!($outer: Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash);
+        assert_impl_all!($outer: Display, FromStr, Binary, Octal, LowerHex, UpperHex, LowerExp, UpperExp);
+      )*
+    };
+  }
+
+  macro_rules! assert_float_traits {
+    ( $($outer:ty),* ) => {
+      $(
+        assert_impl_all!($outer: Sized, Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
+        assert_impl_all!($outer: Copy, Clone, Default, Debug, PartialEq, PartialOrd);
+        assert_impl_all!($outer: Display, FromStr);
+      )*
+    };
+  }
+
+  macro_rules! assert_special_traits {
+    ( $($outer:ty),* ) => {
+      $(
+        assert_impl_all!($outer: Sized, Send, Sync, Unpin, UnwindSafe, RefUnwindSafe);
+        assert_impl_all!($outer: Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash);
+        assert_impl_all!($outer: Display, FromStr);
+      )*
+    };
+  }
+
+  assert_int_traits!(
+    StronglyTypedI8,
+    StronglyTypedI16,
+    StronglyTypedI32,
+    StronglyTypedI64,
+    StronglyTypedI128,
+    StronglyTypedIsize,
+    StronglyTypedU8,
+    StronglyTypedU16,
+    StronglyTypedU32,
+    StronglyTypedU64,
+    StronglyTypedU128,
+    StronglyTypedUsize
+  );
+  assert_float_traits!(StronglyTypedF32, StronglyTypedF64);
+  assert_special_traits!(StronglyTypedChar, StronglyTypedBool);
+};
