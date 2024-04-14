@@ -610,6 +610,7 @@ impl CodeGenerator for BitOpsCG {
     &self,
     StrongType { outer, .. }: &StrongType,
   ) -> Result<TokenStream> {
+    // TODO: ref lhs/rhs
     Ok(quote! {
       impl ::core::ops::BitAnd for #outer {
         type Output = Self;
@@ -675,72 +676,78 @@ impl CodeGenerator for ShiftOpsCG {
     &self,
     StrongType { outer, .. }: &StrongType,
   ) -> Result<TokenStream> {
-    // TODO: rhs: all other integers
     Ok(quote! {
-      impl ::core::ops::Shl<usize> for #outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shl(self, rhs: usize) -> Self::Output { #outer(self.0.shl(rhs)) }
+      macro_rules! shift_ops {
+        ( $($prim:ident)+ ) => {
+          $(
+            impl ::core::ops::Shl<$prim> for #outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shl(self, rhs: $prim) -> Self::Output { #outer(self.0.shl(rhs)) }
+            }
+            impl ::core::ops::Shl<&$prim> for #outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shl(self, rhs: &$prim) -> Self::Output { #outer(self.0.shl(rhs)) }
+            }
+            impl ::core::ops::Shl<$prim> for &#outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shl(self, rhs: $prim) -> Self::Output { #outer(self.0.shl(rhs)) }
+            }
+            impl ::core::ops::Shl<&$prim> for &#outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shl(self, rhs: &$prim) -> Self::Output { #outer(self.0.shl(rhs)) }
+            }
+            impl ::core::ops::ShlAssign<$prim> for #outer {
+              #[inline(always)]
+              fn shl_assign(&mut self, rhs: $prim) { self.0.shl_assign(rhs) }
+            }
+            impl ::core::ops::ShlAssign<&$prim> for #outer {
+              #[inline(always)]
+              fn shl_assign(&mut self, rhs: &$prim) { self.0.shl_assign(rhs) }
+            }
+            impl ::core::ops::Shr<$prim> for #outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shr(self, rhs: $prim) -> Self::Output { #outer(self.0.shr(rhs)) }
+            }
+            impl ::core::ops::Shr<&$prim> for #outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shr(self, rhs: &$prim) -> Self::Output { #outer(self.0.shr(rhs)) }
+            }
+            impl ::core::ops::Shr<$prim> for &#outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shr(self, rhs: $prim) -> Self::Output { #outer(self.0.shr(rhs)) }
+            }
+            impl ::core::ops::Shr<&$prim> for &#outer {
+              type Output = #outer;
+              #[must_use]
+              #[inline(always)]
+              fn shr(self, rhs: &$prim) -> Self::Output { #outer(self.0.shr(rhs)) }
+            }
+            impl ::core::ops::ShrAssign<$prim> for #outer {
+              #[inline(always)]
+              fn shr_assign(&mut self, rhs: $prim) { self.0.shr_assign(rhs) }
+            }
+            impl ::core::ops::ShrAssign<&$prim> for #outer {
+              #[inline(always)]
+              fn shr_assign(&mut self, rhs: &$prim) { self.0.shr_assign(rhs) }
+            }
+          )+
+        };
       }
-      impl ::core::ops::Shl<&usize> for #outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shl(self, rhs: &usize) -> Self::Output { #outer(self.0.shl(rhs)) }
-      }
-      impl ::core::ops::Shl<usize> for &#outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shl(self, rhs: usize) -> Self::Output { #outer(self.0.shl(rhs)) }
-      }
-      impl ::core::ops::Shl<&usize> for &#outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shl(self, rhs: &usize) -> Self::Output { #outer(self.0.shl(rhs)) }
-      }
-      impl ::core::ops::ShlAssign<usize> for #outer {
-        #[inline(always)]
-        fn shl_assign(&mut self, rhs: usize) { self.0.shl_assign(rhs) }
-      }
-      impl ::core::ops::ShlAssign<&usize> for #outer {
-        #[inline(always)]
-        fn shl_assign(&mut self, rhs: &usize) { self.0.shl_assign(rhs) }
-      }
-      impl ::core::ops::Shr<usize> for #outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shr(self, rhs: usize) -> Self::Output { #outer(self.0.shr(rhs)) }
-      }
-      impl ::core::ops::Shr<&usize> for #outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shr(self, rhs: &usize) -> Self::Output { #outer(self.0.shr(rhs)) }
-      }
-      impl ::core::ops::Shr<usize> for &#outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shr(self, rhs: usize) -> Self::Output { #outer(self.0.shr(rhs)) }
-      }
-      impl ::core::ops::Shr<&usize> for &#outer {
-        type Output = #outer;
-        #[must_use]
-        #[inline(always)]
-        fn shr(self, rhs: &usize) -> Self::Output { #outer(self.0.shr(rhs)) }
-      }
-      impl ::core::ops::ShrAssign<usize> for #outer {
-        #[inline(always)]
-        fn shr_assign(&mut self, rhs: usize) { self.0.shr_assign(rhs) }
-      }
-      impl ::core::ops::ShrAssign<&usize> for #outer {
-        #[inline(always)]
-        fn shr_assign(&mut self, rhs: &usize) { self.0.shr_assign(rhs) }
-      }
+      shift_ops!(i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize);
     })
   }
 }
