@@ -2,6 +2,15 @@
 
 #![no_std]
 #![no_implicit_prelude]
+#![deny(
+  unsafe_code,
+  deprecated,
+  rust_2018_idioms,
+  future_incompatible,
+  clippy::all,
+  clippy::pedantic,
+  clippy::nursery
+)]
 
 #[::strongly::typed(i8)]
 pub struct StronglyTypedI8;
