@@ -242,23 +242,6 @@ impl CodeGenerator for ConstCG {
 
 struct ImplCG;
 impl CodeGenerator for ImplCG {
-  fn emit_int(&self, st: &StrongType) -> Result<TokenStream> {
-    let mut output = self.emit(st)?;
-
-    let StrongType { outer, outer_vis, inner, inner_base, .. } = st;
-    let inner_parse_err = inner_base.parse_err_tokens();
-    output.extend(quote! {
-      impl #outer {
-        #[inline(always)]
-        #outer_vis fn from_str_radix(src: &str, radix: u32) -> ::core::result::Result<#outer, #inner_parse_err> {
-          #inner::from_str_radix(src, radix).map(Self)
-        }
-      }
-    });
-
-    Ok(output)
-  }
-
   fn emit(
     &self,
     StrongType { outer, outer_vis, inner, inner_base, .. }: &StrongType,
