@@ -234,13 +234,61 @@ impl CodeGenerator for MethodsCG {
         #[inline(always)]
         #outer_vis const fn abs_diff(self, other: Self) -> #unsigned { self.0.abs_diff(other.0) }
 
+        #[inline(always)]
         const fn map_of_res(result: (#inner, bool)) -> (#outer, bool) { (#outer(result.0), result.1) }
+        #[inline(always)]
         const fn map_self(option: ::core::option::Option<#inner>) -> ::core::option::Option<#outer> {
           use ::core::option::Option::{Some, None};
           match option {
             Some(inner) => Some(#outer(inner)),
             None => None,
           }
+        }
+
+        #[must_use]
+        #[inline(always)]
+        #outer_vis const fn range(self, end: Self) -> impl ::core::iter::Iterator<Item = Self> {
+          struct Iter {
+            start: <Self as ::core::iter::Iterator>::Item,
+            end: <Self as ::core::iter::Iterator>::Item,
+          }
+          impl ::core::iter::Iterator for Iter {
+            type Item = #outer;
+            #[inline(always)]
+            fn next(&mut self) -> ::core::option::Option<Self::Item> {
+              if self.start < self.end {
+                let next = self.start;
+                self.start += Self::Item::ONE;
+                ::core::option::Option::Some(next)
+              } else {
+                ::core::option::Option::None
+              }
+            }
+          }
+          Iter { start: self, end }
+        }
+
+        #[must_use]
+        #[inline(always)]
+        #outer_vis const fn range_incl(self, end: Self) -> impl ::core::iter::Iterator<Item = Self> {
+          struct Iter {
+            start: <Self as ::core::iter::Iterator>::Item,
+            end: <Self as ::core::iter::Iterator>::Item,
+          }
+          impl ::core::iter::Iterator for Iter {
+            type Item = #outer;
+            #[inline(always)]
+            fn next(&mut self) -> ::core::option::Option<Self::Item> {
+              if self.start <= self.end {
+                let next = self.start;
+                self.start += Self::Item::ONE;
+                ::core::option::Option::Some(next)
+              } else {
+                ::core::option::Option::None
+              }
+            }
+          }
+          Iter { start: self, end }
         }
       }
     })
