@@ -1,4 +1,4 @@
-use crate::{CodeGenerator, StrongType};
+use crate::{CodeGenerator, Params, StrongType};
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
 use syn::Result;
@@ -8,6 +8,7 @@ pub struct MethodsCG;
 impl CodeGenerator for MethodsCG {
   fn emit_int(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, inner, inner_base, .. }: &StrongType,
   ) -> Result<TokenStream> {
     let (bytesize, unsigned) = match inner.to_string().as_str() {
@@ -294,8 +295,12 @@ impl CodeGenerator for MethodsCG {
     })
   }
 
-  fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
-    let mut output = self.emit_int(st)?;
+  fn emit_signed_int(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
+    let mut output = self.emit_int(params, st)?;
 
     let StrongType { outer, outer_vis, inner, .. } = st;
     let unsigned = match inner.to_string().as_str() {
@@ -381,6 +386,7 @@ impl CodeGenerator for MethodsCG {
 
   fn emit_float(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
     let (bytesize, bitstype) = match inner.to_string().as_str() {
@@ -469,6 +475,7 @@ impl CodeGenerator for MethodsCG {
 
   fn emit_bool(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {

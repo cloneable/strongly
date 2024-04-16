@@ -4,7 +4,8 @@ mod shift_ops;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-  spanned::Spanned, Error, Fields, ItemStruct, Result, Type, Visibility,
+  punctuated::Punctuated, spanned::Spanned, Error, Fields, ItemStruct, Result,
+  Type, Visibility,
 };
 
 #[proc_macro_attribute]
@@ -19,15 +20,48 @@ pub fn typed(
 }
 
 fn typed_main(params: TokenStream, input: TokenStream) -> Result<TokenStream> {
-  let st = StrongType::parse(params, input)?;
+  let params: Params = syn::parse2(params)?;
+  let st = StrongType::parse(input)?;
 
   let mut output = TokenStream::new();
 
   for codegen in GENERATORS {
-    output.extend(codegen.dispatch(&st)?);
+    output.extend(codegen.dispatch(&params, &st)?);
   }
 
   Ok(output)
+}
+
+struct Params {
+  serde: bool,
+  convert: bool,
+  deref: bool,
+}
+
+impl syn::parse::Parse for Params {
+  fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+    let params =
+      Punctuated::<syn::Ident, syn::Token![,]>::parse_terminated(input)?;
+
+    let mut serde = false;
+    let mut convert = false;
+    let mut deref = false;
+    for param in params {
+      match param.to_string().as_str() {
+        "serde" => serde = true,
+        "convert" => convert = true,
+        "deref" => deref = true,
+        _ => {
+          return Err(Error::new(
+            Span::call_site(),
+            String::from("invalid parameter: {param}"),
+          ))
+        }
+      }
+    }
+
+    Ok(Params { serde, convert, deref })
+  }
 }
 
 struct StrongType {
@@ -39,15 +73,7 @@ struct StrongType {
 }
 
 impl StrongType {
-  fn parse(params: TokenStream, input: TokenStream) -> Result<Self> {
-    if !params.is_empty() {
-      return Err(Error::new(
-        Span::call_site(),
-        String::from("this macro does not (yet) accept parameters"),
-      ));
-    }
-    drop(params);
-
+  fn parse(input: TokenStream) -> Result<Self> {
     let item = syn::parse2::<ItemStruct>(input.clone())?;
     if item.fields.len() != 1 {
       return Err(Error::new(
@@ -108,43 +134,55 @@ impl BaseType {
 }
 
 trait CodeGenerator: Sync + Send {
-  fn dispatch(&self, st: &StrongType) -> Result<TokenStream> {
+  fn dispatch(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
     match st.inner_base {
-      BaseType::Int { signed: false } => self.emit_unsigned_int(st),
-      BaseType::Int { signed: true } => self.emit_signed_int(st),
-      BaseType::Float => self.emit_float(st),
-      BaseType::Char => self.emit_char(st),
-      BaseType::Bool => self.emit_bool(st),
+      BaseType::Int { signed: false } => self.emit_unsigned_int(params, st),
+      BaseType::Int { signed: true } => self.emit_signed_int(params, st),
+      BaseType::Float => self.emit_float(params, st),
+      BaseType::Char => self.emit_char(params, st),
+      BaseType::Bool => self.emit_bool(params, st),
     }
   }
 
-  fn emit(&self, st: &StrongType) -> Result<TokenStream> {
-    let _ = st;
+  fn emit(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
+    let _ = (params, st);
     Ok(TokenStream::default())
   }
 
-  fn emit_unsigned_int(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit_int(st)
+  fn emit_unsigned_int(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
+    self.emit_int(params, st)
   }
 
-  fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit_int(st)
+  fn emit_signed_int(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
+    self.emit_int(params, st)
   }
 
-  fn emit_int(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit(st)
+  fn emit_int(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
+    self.emit(params, st)
   }
 
-  fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit(st)
+  fn emit_float(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
+    self.emit(params, st)
   }
 
-  fn emit_char(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit(st)
+  fn emit_char(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
+    self.emit(params, st)
   }
 
-  fn emit_bool(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit(st)
+  fn emit_bool(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
+    self.emit(params, st)
   }
 }
 
@@ -169,6 +207,7 @@ struct InputCG;
 impl CodeGenerator for InputCG {
   fn emit_float(
     &self,
+    _: &Params,
     StrongType { input, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {
@@ -178,7 +217,11 @@ impl CodeGenerator for InputCG {
     })
   }
 
-  fn emit(&self, StrongType { input, .. }: &StrongType) -> Result<TokenStream> {
+  fn emit(
+    &self,
+    _: &Params,
+    StrongType { input, .. }: &StrongType,
+  ) -> Result<TokenStream> {
     Ok(quote! {
       #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
       #[repr(transparent)]
@@ -191,6 +234,7 @@ struct ConstCG;
 impl CodeGenerator for ConstCG {
   fn emit_int(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {
@@ -207,6 +251,7 @@ impl CodeGenerator for ConstCG {
 
   fn emit_float(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {
@@ -222,6 +267,7 @@ impl CodeGenerator for ConstCG {
 
   fn emit_bool(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {
@@ -237,6 +283,7 @@ struct ImplCG;
 impl CodeGenerator for ImplCG {
   fn emit(
     &self,
+    _: &Params,
     StrongType { outer, outer_vis, inner, inner_base, .. }: &StrongType,
   ) -> Result<TokenStream> {
     let inner_parse_err = inner_base.parse_err_tokens();
@@ -268,9 +315,10 @@ struct ConvertCG;
 impl CodeGenerator for ConvertCG {
   fn emit(
     &self,
+    params: &Params,
     StrongType { outer, outer_vis, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
-    if cfg!(feature = "convert") {
+    if params.convert {
       Ok(quote! {
         impl #outer {
           #[must_use]
@@ -298,16 +346,17 @@ impl CodeGenerator for ConvertCG {
 
 struct BorrowCG;
 impl CodeGenerator for BorrowCG {
-  fn emit_float(&self, _: &StrongType) -> Result<TokenStream> {
+  fn emit_float(&self, _: &Params, _: &StrongType) -> Result<TokenStream> {
     // floats don't implement Eq,Ord,Hash
     Ok(TokenStream::default())
   }
 
   fn emit(
     &self,
+    params: &Params,
     StrongType { outer, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
-    if cfg!(feature = "convert") {
+    if params.convert {
       Ok(quote! {
         impl ::core::borrow::Borrow<#inner> for #outer {
           #[must_use]
@@ -325,9 +374,10 @@ struct DerefCG;
 impl CodeGenerator for DerefCG {
   fn emit(
     &self,
+    params: &Params,
     StrongType { outer, inner, .. }: &StrongType,
   ) -> Result<TokenStream> {
-    if cfg!(feature = "deref") {
+    if params.deref {
       Ok(quote! {
         impl ::core::ops::Deref for #outer {
           type Target = #inner;
@@ -350,17 +400,21 @@ impl CodeGenerator for DerefCG {
 
 struct NumOpsCG;
 impl CodeGenerator for NumOpsCG {
-  fn emit_bool(&self, _: &StrongType) -> Result<TokenStream> {
+  fn emit_bool(&self, _: &Params, _: &StrongType) -> Result<TokenStream> {
     Ok(TokenStream::default())
   }
 
-  fn emit_char(&self, _: &StrongType) -> Result<TokenStream> {
+  fn emit_char(&self, _: &Params, _: &StrongType) -> Result<TokenStream> {
     Ok(TokenStream::default())
   }
 
-  fn emit_signed_int(&self, st: &StrongType) -> Result<TokenStream> {
+  fn emit_signed_int(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
     // TODO: make composition cleaner
-    let mut output = self.emit(st)?;
+    let mut output = self.emit(params, st)?;
     let StrongType { outer, .. } = st;
     output.extend(quote! {
       impl ::core::ops::Neg for #outer {
@@ -379,11 +433,19 @@ impl CodeGenerator for NumOpsCG {
     Ok(output)
   }
 
-  fn emit_float(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit_signed_int(st)
+  fn emit_float(
+    &self,
+    params: &Params,
+    st: &StrongType,
+  ) -> Result<TokenStream> {
+    self.emit_signed_int(params, st)
   }
 
-  fn emit(&self, StrongType { outer, .. }: &StrongType) -> Result<TokenStream> {
+  fn emit(
+    &self,
+    _: &Params,
+    StrongType { outer, .. }: &StrongType,
+  ) -> Result<TokenStream> {
     Ok(quote! {
       impl ::core::ops::Add<#outer> for #outer {
         type Output = #outer;
@@ -582,12 +644,13 @@ impl CodeGenerator for NumOpsCG {
 
 struct BitOpsCG;
 impl CodeGenerator for BitOpsCG {
-  fn emit_bool(&self, st: &StrongType) -> Result<TokenStream> {
-    self.emit_int(st)
+  fn emit_bool(&self, params: &Params, st: &StrongType) -> Result<TokenStream> {
+    self.emit_int(params, st)
   }
 
   fn emit_int(
     &self,
+    _: &Params,
     StrongType { outer, .. }: &StrongType,
   ) -> Result<TokenStream> {
     // TODO: ref lhs/rhs
@@ -654,6 +717,7 @@ struct IntDisplayCG;
 impl CodeGenerator for IntDisplayCG {
   fn emit_int(
     &self,
+    _: &Params,
     StrongType { outer, .. }: &StrongType,
   ) -> Result<TokenStream> {
     Ok(quote! {
@@ -704,9 +768,12 @@ impl CodeGenerator for IntDisplayCG {
 
 struct SerdeCG;
 impl CodeGenerator for SerdeCG {
-  fn emit(&self, StrongType { outer, .. }: &StrongType) -> Result<TokenStream> {
-    // TODO: serde macro param
-    if cfg!(feature = "serde") {
+  fn emit(
+    &self,
+    params: &Params,
+    StrongType { outer, .. }: &StrongType,
+  ) -> Result<TokenStream> {
+    if params.serde {
       Ok(quote! {
         impl ::serde::Serialize for #outer {
           #[inline(always)]

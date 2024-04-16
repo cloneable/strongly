@@ -20,11 +20,7 @@ proc-macro = true
 
 [features]
 default = ["std"]
-full = ["std", "convert", "deref", "serde"]
 std = []
-convert = []
-deref = []
-serde = []
 
 [dependencies]
 proc-macro2 = { version = "1", default-features = false, features = ["proc-macro"] }

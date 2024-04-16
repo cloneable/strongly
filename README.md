@@ -12,25 +12,27 @@ it into a strongly-typed primitive. Supports all integers and floats, plus
 `bool` and `char`.
 
 ```rust
-#[strongly::typed]
+#[strongly::typed(serde)]
 pub struct SpecialInt(u8);
 ```
 
 The attribute will also add all nine possible default derives (`Copy`, `Clone`,
 `Default`, etc.) and set `#[repr(transparent)]`.
 
-## Features
+## Parameters
 
-* Default: __std__
-* __full__: Full feature set.
-* __std__: Doesn't do anything at the moment. None of the generated code requires
-  `std`.
 * __convert__: Generate implemetations of `From`/`Into` between inner and outer
   types. Also add implementation of `Borrow` of all inner primitives except
   floats. Provide `const` helper method to access inner primitive.
 * __deref__: Generate implementations of `Deref` and `DerefMut`.
 * __serde__: Generate implementations of `Serialize` and `Deserialize` to and from
   the representation of the primitive.
+
+## Features
+
+* Default: __std__
+* __std__: Doesn't do anything at the moment. None of the generated code requires
+  `std`.
 
 ## Caveats
 

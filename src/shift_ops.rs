@@ -1,4 +1,4 @@
-use crate::{CodeGenerator, StrongType};
+use crate::{CodeGenerator, Params, StrongType};
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::Result;
@@ -8,6 +8,7 @@ pub struct ShiftOpsCG;
 impl CodeGenerator for ShiftOpsCG {
   fn emit_int(
     &self,
+    _: &Params,
     StrongType { outer, .. }: &StrongType,
   ) -> Result<TokenStream> {
     let int_prims = [

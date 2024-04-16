@@ -12,52 +12,52 @@
   clippy::nursery
 )]
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedI8(i8);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedI16(i16);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedI32(i32);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedI64(i64);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedI128(i128);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedU8(u8);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedU16(u16);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedU32(u32);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedU64(u64);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedU128(u128);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedF32(f32);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedF64(f64);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedIsize(isize);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedUsize(usize);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedChar(char);
 
-#[::strongly::typed]
+#[::strongly::typed(convert, deref, serde)]
 pub struct StronglyTypedBool(bool);
 
 extern "C" {

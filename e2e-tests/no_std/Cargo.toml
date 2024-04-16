@@ -7,4 +7,4 @@ publish = false
 [dependencies]
 serde = { version = "1", default-features = false }
 static_assertions = { version = "1.1", default-features = false }
-strongly = { path = "../..", features = ["full"] }
+strongly = { path = "../.." }
