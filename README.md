@@ -1,4 +1,4 @@
-# `strongly::typed`
+# `#[strongly::typed]`
 
 A proc macro to create strongly-typed primitives.
 
@@ -7,13 +7,13 @@ A proc macro to create strongly-typed primitives.
 
 ## Usage
 
-Add the `#[strongly::typed(<primitive>)]` attribute to your unit struct to turn
+Add the `#[strongly::typed]` attribute to your newtype struct to turn
 it into a strongly-typed primitive. Supports all integers and floats, plus
 `bool` and `char`.
 
 ```rust
-#[strongly::typed(u8)]
-pub struct SpecialInt;
+#[strongly::typed]
+pub struct SpecialInt(u8);
 ```
 
 The attribute will also add all nine possible default derives (`Copy`, `Clone`,

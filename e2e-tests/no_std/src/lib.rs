@@ -12,53 +12,53 @@
   clippy::nursery
 )]
 
-#[::strongly::typed(i8)]
-pub struct StronglyTypedI8;
+#[::strongly::typed]
+pub struct StronglyTypedI8(i8);
 
-#[::strongly::typed(i16)]
-pub struct StronglyTypedI16;
+#[::strongly::typed]
+pub struct StronglyTypedI16(i16);
 
-#[::strongly::typed(i32)]
-pub struct StronglyTypedI32;
+#[::strongly::typed]
+pub struct StronglyTypedI32(i32);
 
-#[::strongly::typed(i64)]
-pub struct StronglyTypedI64;
+#[::strongly::typed]
+pub struct StronglyTypedI64(i64);
 
-#[::strongly::typed(i128)]
-pub struct StronglyTypedI128;
+#[::strongly::typed]
+pub struct StronglyTypedI128(i128);
 
-#[::strongly::typed(u8)]
-pub struct StronglyTypedU8;
+#[::strongly::typed]
+pub struct StronglyTypedU8(u8);
 
-#[::strongly::typed(u16)]
-pub struct StronglyTypedU16;
+#[::strongly::typed]
+pub struct StronglyTypedU16(u16);
 
-#[::strongly::typed(u32)]
-pub struct StronglyTypedU32;
+#[::strongly::typed]
+pub struct StronglyTypedU32(u32);
 
-#[::strongly::typed(u64)]
-pub struct StronglyTypedU64;
+#[::strongly::typed]
+pub struct StronglyTypedU64(u64);
 
-#[::strongly::typed(u128)]
-pub struct StronglyTypedU128;
+#[::strongly::typed]
+pub struct StronglyTypedU128(u128);
 
-#[::strongly::typed(f32)]
-pub struct StronglyTypedF32;
+#[::strongly::typed]
+pub struct StronglyTypedF32(f32);
 
-#[::strongly::typed(f64)]
-pub struct StronglyTypedF64;
+#[::strongly::typed]
+pub struct StronglyTypedF64(f64);
 
-#[::strongly::typed(isize)]
-pub struct StronglyTypedIsize;
+#[::strongly::typed]
+pub struct StronglyTypedIsize(isize);
 
-#[::strongly::typed(usize)]
-pub struct StronglyTypedUsize;
+#[::strongly::typed]
+pub struct StronglyTypedUsize(usize);
 
-#[::strongly::typed(char)]
-pub struct StronglyTypedChar;
+#[::strongly::typed]
+pub struct StronglyTypedChar(char);
 
-#[::strongly::typed(bool)]
-pub struct StronglyTypedBool;
+#[::strongly::typed]
+pub struct StronglyTypedBool(bool);
 
 extern "C" {
   pub fn pass(v: StronglyTypedI8) -> StronglyTypedI8;

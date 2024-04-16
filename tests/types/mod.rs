@@ -2,8 +2,8 @@ macro_rules! types {
   (  $($inner:ident)+ ) => {
     $(
       paste::paste! {
-        #[::strongly::typed(pub $inner)]
-        pub struct [<Strong $inner>];
+        #[::strongly::typed]
+        pub struct [<Strong $inner>](pub $inner);
       }
     )+
   };

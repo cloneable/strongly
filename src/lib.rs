@@ -4,8 +4,7 @@ mod shift_ops;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
-  spanned::Spanned, Error, Fields, FieldsUnnamed, ItemStruct, Result, Type,
-  Visibility,
+  spanned::Spanned, Error, Fields, ItemStruct, Result, Type, Visibility,
 };
 
 #[proc_macro_attribute]
@@ -41,37 +40,31 @@ struct StrongType {
 
 impl StrongType {
   fn parse(params: TokenStream, input: TokenStream) -> Result<Self> {
-    if params.is_empty() {
+    if !params.is_empty() {
       return Err(Error::new(
         Span::call_site(),
-        String::from("Sole macro parameter must be a primitive field"),
-      ));
-    }
-    let fields: FieldsUnnamed = syn::parse_quote!( ( #params ) );
-    if fields.unnamed.len() != 1 {
-      return Err(Error::new(
-        Span::call_site(),
-        String::from("Sole macro parameter must be a primitive field"),
+        String::from("this macro does not (yet) accept parameters"),
       ));
     }
     drop(params);
 
-    let mut item = syn::parse2::<ItemStruct>(input)?;
-    if !item.fields.is_empty() {
+    let item = syn::parse2::<ItemStruct>(input.clone())?;
+    if item.fields.len() != 1 {
       return Err(Error::new(
         item.fields.span(),
-        String::from("Expected unit struct"),
+        String::from("expected newtype struct"),
       ));
     }
-    item.fields = Fields::Unnamed(fields);
-    let input = item.to_token_stream();
 
     let outer = item.ident.clone();
     // No way to clone Visibility?
     let outer_vis = syn::parse2(item.vis.to_token_stream())?;
 
     let Fields::Unnamed(fields) = &item.fields else {
-      panic!("not tuple struct");
+      return Err(Error::new(
+        item.fields.span(),
+        String::from("expected newtype struct"),
+      ));
     };
     let field = fields.unnamed.first().expect("first element");
     let inner = match &field.ty {
